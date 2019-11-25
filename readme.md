@@ -533,7 +533,7 @@ $abilities = $user->getAbilities();
 
 This will return a collection of the user's allowed abilities, including any abilities granted to the user through their roles.
 
-You can also get a list of abilities that have been _explicitly_ forfidden:
+You can also get a list of abilities that have been _explicitly_ forbidden:
 
 ```php
 $forbiddenAbilities = $user->getForbiddenAbilities();
