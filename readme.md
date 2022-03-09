@@ -79,37 +79,23 @@ Bouncer::assign('admin')->to($user);
 Bouncer::allow($user)->to('edit', $post);
 ```
 
-When you check abilities at Laravel's gate, the bouncer will automatically be consulted. If he sees an ability that has been granted to the current user (whether directly, or through a role) he'll authorize the check.
+When you check abilities at Laravel's gate, Bouncer will automatically be consulted. If Bouncer sees an ability that has been granted to the current user (whether directly, or through a role) it'll authorize the check.
 
 ## Installation
 
+> **Note**: Bouncer requires PHP 7.2+ and Laravel/Eloquent 6.0+
+> 
+> If you're not up to date, use [Bouncer RC6](https://github.com/JosephSilber/bouncer/tree/v1.0.0-rc.6). It supports all the way back to PHP 5.5 & Laravel 5.1, and has no known bugs.
+
 ### Installing Bouncer in a Laravel app
 
-Install Bouncer with [composer](https://getcomposer.org/doc/00-intro.md):
+1) Install Bouncer with [composer](https://getcomposer.org/doc/00-intro.md):
 
-```
-$ composer require silber/bouncer v1.0.0-rc.6
-```
-
-> In Laravel 5.5, [service providers and aliases are automatically registered](https://laravel.com/docs/6.0/packages#package-discovery). If you're using Laravel 5.5, skip ahead directly to step 3 (do not pass go, but do collect $200).
-
-Once the composer installation completes, you can add the service provider and alias the facade. Open `config/app.php`, and make the following changes:
-
-1) Add a new item to the `providers` array:
-
-    ```php
-    Silber\Bouncer\BouncerServiceProvider::class,
+    ```
+    composer require silber/bouncer
     ```
 
-2) Add a new item to the `aliases` array:
-
-    ```php
-    'Bouncer' => Silber\Bouncer\BouncerFacade::class,
-    ```
-
-    This part is optional. If you don't want to use the facade, you can skip step 2.
-
-3) Add Bouncer's trait to your user model:
+2) Add Bouncer's trait to your user model:
 
     ```php
     use Silber\Bouncer\Database\HasRolesAndAbilities;
@@ -120,13 +106,13 @@ Once the composer installation completes, you can add the service provider and a
     }
     ```
 
-4) Now, to run Bouncer's migrations, first publish the migrations into your app's `migrations` directory, by running the following command:
+3) Now, to run Bouncer's migrations. First publish the migrations into your app's `migrations` directory, by running the following command:
 
     ```
     php artisan vendor:publish --tag="bouncer.migrations"
     ```
 
-5) Finally, run the migrations:
+4) Finally, run the migrations:
 
     ```
     php artisan migrate
@@ -140,14 +126,14 @@ Whenever you use the `Bouncer` facade in your code, remember to add this line to
 use Bouncer;
 ```
 
-For more information about Laravel Facades, refer to [the Laravel documentation](https://laravel.com/docs/6.0/facades).
+For more information about Laravel Facades, refer to [the Laravel documentation](https://laravel.com/docs/9.x/facades).
 
 ### Installing Bouncer in a non-Laravel app
 
 1) Install Bouncer with [composer](https://getcomposer.org/doc/00-intro.md):
 
     ```
-    $ composer require silber/bouncer v1.0.0-rc.6
+    composer require silber/bouncer
     ```
 
 2) Set up the database with [the Eloquent Capsule component](https://github.com/illuminate/database/blob/master/README.md):
@@ -166,7 +152,7 @@ For more information about Laravel Facades, refer to [the Laravel documentation]
 
 3) Run the migrations by either of the following methods:
 
-    - Use a tool such as [vagabond](https://github.com/michaeldyrynda/vagabond) to run Laravel migrations outside of a Laravel app. You'll find the necessary migrations in [the migrations stub file](https://github.com/JosephSilber/bouncer/blob/master/migrations/create_bouncer_tables.php#L17-L73).
+    - Use a tool such as [vagabond](https://github.com/michaeldyrynda/vagabond) to run Laravel migrations outside of a Laravel app. You'll find the necessary migrations in [the migrations stub file](https://github.com/JosephSilber/bouncer/blob/master/migrations/create_bouncer_tables.php#L18-L79).
 
     - Alternatively, you can run [the raw SQL](https://github.com/JosephSilber/bouncer/blob/master/migrations/sql/MySQL.sql) directly in your database.
 
@@ -362,7 +348,7 @@ Or directly on the user:
 $user->disallow('ban-users');
 ```
 
-> **Note:** if the user has a role that allows them to `ban-users` they will still have that ability. To disallow it, either remove the ability from the role or retract the role from the user.
+> **Note:** if the user has a role that allows them to `ban-users`, they will still have that ability. To disallow it, either remove the ability from the role or retract the role from the user.
 
 If the ability has been granted through a role, tell the bouncer to remove the ability from the role instead:
 
@@ -541,17 +527,25 @@ $forbiddenAbilities = $user->getForbiddenAbilities();
 
 ### Authorizing users
 
-Authorizing users is handled directly at [Laravel's `Gate`](https://laravel.com/docs/6.0/authorization#gates), or on the user model (`$user->can($ability)`).
+Authorizing users is handled directly at [Laravel's `Gate`](https://laravel.com/docs/9.x/authorization#gates), or on the user model (`$user->can($ability)`).
 
-For convenience, the bouncer class provides these passthrough methods:
+For convenience, the `Bouncer` class provides these passthrough methods:
 
 ```php
 Bouncer::can($ability);
+Bouncer::can($ability, $model);
+
+Bouncer::canAny($abilities);
+Bouncer::canAny($abilities, $model);
+
 Bouncer::cannot($ability);
+Bouncer::cannot($ability, $model);
+
 Bouncer::authorize($ability);
+Bouncer::authorize($ability, $model);
 ```
 
-These call directly into the `Gate` class.
+These call directly into their equivalent methods on the `Gate` class.
 
 ### Blade directives
 
@@ -581,7 +575,7 @@ Whenever you need, you can fully refresh the bouncer's cache:
 Bouncer::refresh();
 ```
 
-> **Note:** fully refreshing the cache for all users uses [cache tags](https://laravel.com/docs/6.0/cache#cache-tags) if they're available. Not all cache drivers support this. Refer to [Laravel's documentation](https://laravel.com/docs/6.0/cache#cache-tags) to see if your driver supports cache tags. If your driver does not support cache tags, calling `refresh` might be a little slow, depending on the amount of users in your system.
+> **Note:** fully refreshing the cache for all users uses [cache tags](https://laravel.com/docs/9.x/cache#cache-tags) if they're available. Not all cache drivers support this. Refer to [Laravel's documentation](https://laravel.com/docs/9.x/cache#cache-tags) to see if your driver supports cache tags. If your driver does not support cache tags, calling `refresh` might be a little slow, depending on the amount of users in your system.
 
 Alternatively, you can refresh the cache only for a specific user:
 
@@ -666,7 +660,7 @@ Bouncer will call the methods on the `Scope` interface at various points in its 
 
 Bouncer ships with sensible defaults, so most of the time there should be no need for any configuration. For finer-grained control, Bouncer can be customized by calling various configuration methods on the `Bouncer` class.
 
-If you only use one or two of these config options, you can stick them into your [main `AppServiceProvider`'s `boot` method](https://github.com/laravel/laravel/blob/bf3785d/app/Providers/AppServiceProvider.php#L14-L17). If they start growing, you may create a separate `BouncerServiceProvider` class in [your `app/Providers` directory](https://github.com/laravel/laravel/tree/bf3785d0bc3cd166119d8ed45c2f869bbc31021c/app/Providers) (remember to register it in [the `providers` config array](https://github.com/laravel/laravel/blob/bf3785d0bc3cd166119d8ed45c2f869bbc31021c/config/app.php#L140-L145)).
+If you only use one or two of these config options, you can stick them into your [main `AppServiceProvider`'s `boot` method](https://github.com/laravel/laravel/blob/e077976680bdb2644698fb8965a1e2a8710b5d4b/app/Providers/AppServiceProvider.php#L24-L27). If they start growing, you may create a separate `BouncerServiceProvider` class in [your `app/Providers` directory](https://github.com/laravel/laravel/tree/e077976680bdb2644698fb8965a1e2a8710b5d4b/app/Providers) (remember to register it in [the `providers` config array](https://github.com/laravel/laravel/blob/e077976680bdb2644698fb8965a1e2a8710b5d4b/config/app.php#L171-L178)).
 
 ### Cache
 
@@ -697,7 +691,7 @@ Bouncer::tables([
 ]);
 ```
 
-Bouncer's published migration uses the table names from this configuration, so be sure to have these in place before actually running the migration file.
+Bouncer's published migration uses the table names from this configuration, so be sure to have these in place before actually running the migration.
 
 ### Custom models
 
@@ -797,7 +791,7 @@ There are some concepts in Bouncer that people keep on asking about, so here's a
 
 ### Where do I set up my app's roles and abilities?
 
-Seeding the initial roles and abilities can be done in a regular [Laravel seeder](https://laravel.com/docs/6.0/seeding) class. Start by creating a specific seeder file for Bouncer:
+Seeding the initial roles and abilities can be done in a regular [Laravel seeder](https://laravel.com/docs/9.x/seeding) class. Start by creating a specific seeder file for Bouncer:
 
 ```
 php artisan make:seeder BouncerSeeder
@@ -837,7 +831,7 @@ php artisan db:seed --class=BouncerSeeder
 
 Bouncer's [`scope`](#the-scope-middleware) can be used to section off different parts of the site, creating a silo for each one of them with its own set of roles & abilities:
 
-1. Create a `ScopeBouncer` [middleware](https://laravel.com/docs/6.0/middleware#defining-middleware) that takes an `$identifier` and sets it as the current scope:
+1. Create a `ScopeBouncer` [middleware](https://laravel.com/docs/9.x/middleware#defining-middleware) that takes an `$identifier` and sets it as the current scope:
 
     ```php
     use Bouncer, Closure;
@@ -878,7 +872,7 @@ That's it. All roles and abilities will now be separately scoped for each sectio
 
 ### I'm trying to run the migration, but I'm getting a SQL error that the "specified key was too long"
 
-Starting with Laravel 5.4, the default database character set is now `utf8mb4`. If you're using older versions of some databases (MySQL below 5.7.7, or MariaDB below 10.2.2) with Larvel 5.4+, you'll get a SQL error when trying to create an index on a string column. To fix this, change Laravel's default string length in your `AppServiceProvider`:
+Starting with Laravel 5.4, the default database character set is now `utf8mb4`. If you're using older versions of some databases (MySQL below 5.7.7, or MariaDB below 10.2.2) with Laravel 5.4+, you'll get a SQL error when trying to create an index on a string column. To fix this, change Laravel's default string length in your `AppServiceProvider`:
 
 ```php
 use Illuminate\Support\Facades\Schema;
@@ -893,7 +887,7 @@ You can read more in [this Laravel News article](https://laravel-news.com/larave
 
 ## I'm trying to run the migration, but I'm getting a SQL error that there is a "Syntax error or access violation: 1064 ... to use near json not null)"
 
-JSON columns are a relatively new addition to MySQL (5.7.8) and MariaDB (10.0.1). If you're using an older version of these databases, you cannot use JSON columns.
+JSON columns are a relatively new addition to MySQL (5.7.8) and MariaDB (10.2.7). If you're using an older version of these databases, you cannot use JSON columns.
 
 The best solution would be to upgrade your DB. If that's not currently possible, you can change [your published migration file](https://github.com/JosephSilber/bouncer/blob/2e31b84e9c1f6c2b86084df2af9d05299ba73c62/migrations/create_bouncer_tables.php#L25) to use a `text` column instead:
 
@@ -939,7 +933,7 @@ php artisan bouncer:clean --orphaned
 
 If you don't pass it any flags, it will delete both types of unused abilities.
 
-To automatically run this command periodically, add it to [your console kernel's schedule](https://laravel.com/docs/6.0/scheduling#defining-schedules):
+To automatically run this command periodically, add it to [your console kernel's schedule](https://laravel.com/docs/9.x/scheduling#defining-schedules):
 
 ```php
 $schedule->command('bouncer:clean')->weekly();
@@ -984,7 +978,7 @@ Bouncer::assign('admin')->to($user);
 Bouncer::retract('admin')->from($user);
 
 // Assigning roles to multiple users by ID
-Bouncer::assign('admin')->to([1,2,3]);
+Bouncer::assign('admin')->to([1, 2, 3]);
 
 // Re-syncing a user's roles
 Bouncer::sync($user)->roles($roles);

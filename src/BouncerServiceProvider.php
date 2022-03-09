@@ -10,6 +10,7 @@ use Illuminate\Cache\ArrayStore;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 
 class BouncerServiceProvider extends ServiceProvider
 {
@@ -32,12 +33,11 @@ class BouncerServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerMorphs();
-        $this->setTablePrefix();
         $this->setUserModel();
 
         $this->registerAtGate();
 
-        if ($this->runningInConsole()) {
+        if ($this->app->runningInConsole()) {
             $this->publishMiddleware();
             $this->publishMigrations();
         }
@@ -50,10 +50,10 @@ class BouncerServiceProvider extends ServiceProvider
      */
     protected function registerBouncer()
     {
-        $this->app->singleton(Bouncer::class, function () {
+        $this->app->singleton(Bouncer::class, function ($app) {
             return Bouncer::make()
                 ->withClipboard(new CachedClipboard(new ArrayStore))
-                ->withGate($this->app->make(Gate::class))
+                ->withGate($app->make(Gate::class))
                 ->create();
         });
     }
@@ -76,32 +76,6 @@ class BouncerServiceProvider extends ServiceProvider
     protected function registerMorphs()
     {
         Models::updateMorphMap();
-    }
-
-    /**
-     * Set the table prefix for Bouncer's tables.
-     *
-     * @return void
-     */
-    protected function setTablePrefix()
-    {
-        if ($prefix = $this->getTablePrefix()) {
-            Models::setPrefix($prefix);
-        }
-    }
-
-    /**
-     * Get the configured table prefix.
-     *
-     * @return string|null
-     */
-    protected function getTablePrefix()
-    {
-        $config = $this->app->config['database'];
-
-        $connection = Arr::get($config, 'default');
-
-        return Arr::get($config, "connections.{$connection}.prefix");
     }
 
     /**
@@ -145,33 +119,20 @@ class BouncerServiceProvider extends ServiceProvider
      */
     protected function setUserModel()
     {
-        Models::setUsersModel($this->getUserModel());
+        if ($model = $this->getUserModel()) {
+            Models::setUsersModel($model);
+        }
     }
 
     /**
      * Get the user model from the application's auth config.
      *
-     * @return string
+     * @return string|null
      */
     protected function getUserModel()
     {
         $config = $this->app->make('config');
 
-        if (! is_null($model = $this->getUserModelFromDefaultGuard($config))) {
-            return $model;
-        }
-
-        return $config->get('auth.model', \App\User::class);
-    }
-
-    /**
-     * Get the user model from the application's auth config.
-     *
-     * @param  \Illuminate\Config\Repository  $config
-     * @return string|null
-     */
-    protected function getUserModelFromDefaultGuard($config)
-    {
         if (is_null($guard = $config->get('auth.defaults.guard'))) {
             return null;
         }
@@ -180,7 +141,14 @@ class BouncerServiceProvider extends ServiceProvider
             return null;
         }
 
-        return $config->get("auth.providers.{$provider}.model");
+        $model = $config->get("auth.providers.{$provider}.model");
+
+        // The standard auth config that ships with Laravel references the
+        // Eloquent User model in the above config path. However, users
+        // are free to reference anything there - so we check first.
+        if (is_subclass_of($model, EloquentModel::class)) {
+            return $model;
+        }
     }
 
     /**
@@ -194,17 +162,5 @@ class BouncerServiceProvider extends ServiceProvider
         // auto-register at the gate. We already registered Bouncer in
         // the container using the Factory, so now we'll resolve it.
         $this->app->make(Bouncer::class);
-    }
-
-    /**
-     * Determine if we are running in the console.
-     *
-     * Copied from Laravel's Application class, since we need to support 5.1.
-     *
-     * @return bool
-     */
-    protected function runningInConsole()
-    {
-        return php_sapi_name() == 'cli' || php_sapi_name() == 'phpdbg';
     }
 }

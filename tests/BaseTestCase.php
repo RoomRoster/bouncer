@@ -19,6 +19,7 @@ use Illuminate\Cache\ArrayStore;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Container\Container;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Capsule\Manager as DB;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 
@@ -50,7 +51,7 @@ abstract class BaseTestCase extends TestCase
      *
      * @return void
      */
-    public function setUp()
+    public function setUp(): void
     {
         Container::setInstance(new Container);
 
@@ -81,6 +82,10 @@ abstract class BaseTestCase extends TestCase
         $container->bind('db', function () {
             return $this->db();
         });
+
+        $container->bind('db.schema', function () {
+            return $this->db()->getConnection()->getSchemaBuilder();
+        });
     }
 
     protected function migrate()
@@ -99,6 +104,7 @@ abstract class BaseTestCase extends TestCase
             $table->string('name')->nullable();
             $table->integer('age')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('accounts', function ($table) {
@@ -115,7 +121,7 @@ abstract class BaseTestCase extends TestCase
      *
      * @return void
      */
-    public function tearDown()
+    public function tearDown(): void
     {
         $this->rollbackTestTables();
 
@@ -202,18 +208,21 @@ abstract class BaseTestCase extends TestCase
 
 class User extends Eloquent
 {
-    use Authorizable, HasRolesAndAbilities {
-        Authorizable::getClipboardInstance insteadof HasRolesAndAbilities;
-    }
+    use Authorizable, HasRolesAndAbilities;
 
     protected $table = 'users';
 
     protected $guarded = [];
 }
 
+class UserWithSoftDeletes extends User
+{
+    use SoftDeletes;
+}
+
 class Account extends Eloquent
 {
-    use HasRolesAndAbilities;
+    use Authorizable, HasRolesAndAbilities;
 
     protected $table = 'accounts';
 

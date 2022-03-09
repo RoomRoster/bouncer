@@ -49,7 +49,6 @@ class Abilities
         return function ($query) use ($authority, $allowed) {
             $permissions = Models::table('permissions');
             $roles       = Models::table('roles');
-            $prefix      = Models::prefix();
 
             $query->from($roles)
                   ->select("{$prefix}{$permissions}.ability_id")
@@ -62,31 +61,8 @@ class Abilities
 
             $query->where(function ($query) use ($roles, $authority, $allowed) {
                 $query->whereIn("{$roles}.id", static::getAuthorityRoleConstraint($authority));
-
-                if ($allowed) {
-                    static::addRoleInheritCondition($query, $authority, $roles);
-                }
             });
         };
-    }
-
-    /**
-     * Add the role inheritence "where" clause to the given query.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Model  $authority
-     * @param  string  $roles
-     * @return \Closure
-     */
-    protected static function addRoleInheritCondition(Builder $query, Model $authority, $roles)
-    {
-        $query->orWhere('level', '<', function ($query) use ($authority, $roles) {
-            $query->selectRaw('max(level)')
-                  ->from($roles)
-                  ->whereIn("{$roles}.id", static::getAuthorityRoleConstraint($authority));
-
-            Models::scope()->applyToModelQuery($query, $roles);
-        });
     }
 
     /**
@@ -101,7 +77,6 @@ class Abilities
             $pivot  = Models::table('assigned_roles');
             $roles  = Models::table('roles');
             $table  = $authority->getTable();
-            $prefix = Models::prefix();
 
             $query->from($table)
                   ->select("{$prefix}{$pivot}.role_id")
@@ -127,7 +102,6 @@ class Abilities
             $permissions = Models::table('permissions');
             $abilities   = Models::table('abilities');
             $table       = $authority->getTable();
-            $prefix      = Models::prefix();
 
             $query->from($table)
                   ->select("{$prefix}{$permissions}.ability_id")
