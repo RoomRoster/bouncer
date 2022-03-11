@@ -49,6 +49,7 @@ class Abilities
         return function ($query) use ($authority, $allowed) {
             $permissions = Models::table('permissions');
             $roles       = Models::table('roles');
+            $prefix      = Models::prefix();
 
             $query->from($roles)
                   ->select("{$prefix}{$permissions}.ability_id")
@@ -77,6 +78,7 @@ class Abilities
             $pivot  = Models::table('assigned_roles');
             $roles  = Models::table('roles');
             $table  = $authority->getTable();
+            $prefix = Models::prefix();
 
             $query->from($table)
                   ->select("{$prefix}{$pivot}.role_id")
@@ -102,6 +104,7 @@ class Abilities
             $permissions = Models::table('permissions');
             $abilities   = Models::table('abilities');
             $table       = $authority->getTable();
+            $prefix      = Models::prefix();
 
             $query->from($table)
                   ->select("{$prefix}{$permissions}.ability_id")
