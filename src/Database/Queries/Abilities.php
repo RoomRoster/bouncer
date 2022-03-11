@@ -102,7 +102,6 @@ class Abilities
     {
         return function ($query) use ($authority, $allowed) {
             $permissions = Models::table('permissions');
-            $abilities   = Models::table('abilities');
             $table       = $authority->getTable();
             $prefix      = Models::prefix();
 
@@ -113,7 +112,6 @@ class Abilities
                   ->where("{$permissions}.entity_type", $authority->getMorphClass())
                   ->where("{$table}.{$authority->getKeyName()}", $authority->getKey());
 
-            Models::scope()->applyToModelQuery($query, $abilities);
             Models::scope()->applyToRelationQuery($query, $permissions);
         };
     }
