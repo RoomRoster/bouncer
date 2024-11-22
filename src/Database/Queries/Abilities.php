@@ -134,10 +134,10 @@ class Abilities
     {
         return function ($query) use ($allowed) {
             $permissions = Models::table('permissions');
-            $abilities   = Models::table('abilities');
+            $prefix      = Models::prefix();
 
             $query->from($permissions)
-                  ->whereColumn("{$permissions}.ability_id", "{$abilities}.id")
+                  ->select("{$prefix}{$permissions}.ability_id")
                   ->where("{$permissions}.forbidden", ! $allowed)
                   ->whereNull('entity_id');
 
