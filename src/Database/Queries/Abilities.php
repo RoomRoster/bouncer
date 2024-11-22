@@ -19,9 +19,10 @@ class Abilities
     public static function forAuthority(Model $authority, $allowed = true)
     {
         return Models::ability()->where(function ($query) use ($authority, $allowed) {
-            $query->whereExists(static::getRoleConstraint($authority, $allowed));
-            $query->orWhereExists(static::getAuthorityConstraint($authority, $allowed));
-            $query->orWhereExists(static::getEveryoneConstraint($allowed));
+            $abilities = Models::table('abilities');
+            $query->whereIn("{$abilities}.id", static::getRoleConstraint($authority, $allowed));
+            $query->orWhereIn("{$abilities}.id", static::getAuthorityConstraint($authority, $allowed));
+            $query->orWhereIn("{$abilities}.id", static::getEveryoneConstraint($allowed));
         });
     }
 
@@ -47,12 +48,12 @@ class Abilities
     {
         return function ($query) use ($authority, $allowed) {
             $permissions = Models::table('permissions');
-            $abilities   = Models::table('abilities');
             $roles       = Models::table('roles');
+            $prefix      = Models::prefix();
 
             $query->from($roles)
+                  ->select("{$prefix}{$permissions}.ability_id")
                   ->join($permissions, $roles.'.id', '=', $permissions.'.entity_id')
-                  ->whereColumn("{$permissions}.ability_id", "{$abilities}.id")
                   ->where($permissions.".forbidden", ! $allowed)
                   ->where($permissions.".entity_type", Models::role()->getMorphClass());
 
@@ -60,7 +61,7 @@ class Abilities
             Models::scope()->applyToRelationQuery($query, $permissions);
 
             $query->where(function ($query) use ($roles, $authority, $allowed) {
-                $query->whereExists(static::getAuthorityRoleConstraint($authority));
+                $query->whereIn("{$roles}.id", static::getAuthorityRoleConstraint($authority));
             });
         };
     }
@@ -77,10 +78,11 @@ class Abilities
             $pivot  = Models::table('assigned_roles');
             $roles  = Models::table('roles');
             $table  = $authority->getTable();
+            $prefix = Models::prefix();
 
             $query->from($table)
+                  ->select("{$prefix}{$pivot}.role_id")
                   ->join($pivot, "{$table}.{$authority->getKeyName()}", '=', $pivot.'.entity_id')
-                  ->whereColumn("{$pivot}.role_id", "{$roles}.id")
                   ->where($pivot.'.entity_type', $authority->getMorphClass())
                   ->where("{$table}.{$authority->getKeyName()}", $authority->getKey());
 
@@ -100,17 +102,16 @@ class Abilities
     {
         return function ($query) use ($authority, $allowed) {
             $permissions = Models::table('permissions');
-            $abilities   = Models::table('abilities');
             $table       = $authority->getTable();
+            $prefix      = Models::prefix();
 
             $query->from($table)
+                  ->select("{$prefix}{$permissions}.ability_id")
                   ->join($permissions, "{$table}.{$authority->getKeyName()}", '=', $permissions.'.entity_id')
-                  ->whereColumn("{$permissions}.ability_id", "{$abilities}.id")
                   ->where("{$permissions}.forbidden", ! $allowed)
                   ->where("{$permissions}.entity_type", $authority->getMorphClass())
                   ->where("{$table}.{$authority->getKeyName()}", $authority->getKey());
 
-            Models::scope()->applyToModelQuery($query, $abilities);
             Models::scope()->applyToRelationQuery($query, $permissions);
         };
     }
@@ -125,10 +126,10 @@ class Abilities
     {
         return function ($query) use ($allowed) {
             $permissions = Models::table('permissions');
-            $abilities   = Models::table('abilities');
+            $prefix      = Models::prefix();
 
             $query->from($permissions)
-                  ->whereColumn("{$permissions}.ability_id", "{$abilities}.id")
+                  ->select("{$prefix}{$permissions}.ability_id")
                   ->where("{$permissions}.forbidden", ! $allowed)
                   ->whereNull('entity_id');
 
