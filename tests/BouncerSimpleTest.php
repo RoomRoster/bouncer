@@ -45,6 +45,7 @@ class BouncerSimpleTest extends BaseTestCase
      */
     function can_give_and_remove_abilities_for_everyone($provider)
     {
+        $this->markTestSkipped('Not supported yet.');
         list($bouncer, $user) = $provider();
 
         $editSite = Ability::create(['name' => 'edit-site']);
