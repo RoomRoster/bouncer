@@ -55,10 +55,10 @@ class Abilities
 
             $query->from($roles)
                 ->select("{$prefix}{$permissions}.ability_id")
-                ->join($permissions, fn (JoinClause $join): JoinClause => $join
-                    ->on($roles.'.id', '=', $permissions.'.entity_id')
-                    ->where($permissions.".entity_type", Models::role()->getMorphClass())
-                )
+                ->join($permissions, function (JoinClause $join) use ($roles, $permissions) {
+                    return $join->on($roles.'.id', '=', $permissions.'.entity_id')
+                        ->where($permissions.".entity_type", Models::role()->getMorphClass());
+                })
                 ->where($permissions.".forbidden", ! $allowed);
 
             Models::scope()->applyToModelQuery($query, $roles);
@@ -86,10 +86,10 @@ class Abilities
 
             $query->from($table)
                 ->select("{$prefix}{$pivot}.role_id")
-                ->join($pivot, fn (JoinClause $join): JoinClause => $join
-                    ->on("{$table}.{$authority->getKeyName()}", '=', $pivot.'.entity_id')
-                    ->where($pivot.'.entity_type', $authority->getMorphClass())
-                )
+                ->join($pivot, function (JoinClause $join) use ($table, $authority, $pivot) {
+                    return $join->on("{$table}.{$authority->getKeyName()}", '=', $pivot.'.entity_id')
+                        ->where($pivot.'.entity_type', $authority->getMorphClass());
+                })
                 ->where("{$table}.{$authority->getKeyName()}", '=', $authority->getKey());
 
             Models::scope()->applyToModelQuery($query, $roles);
@@ -113,10 +113,10 @@ class Abilities
 
             $query->from($table)
                 ->select("{$prefix}{$permissions}.ability_id")
-                ->join($permissions, fn (JoinClause $join): JoinClause => $join
-                    ->on("{$table}.{$authority->getKeyName()}", '=', $permissions.'.entity_id')
-                    ->where("{$permissions}.entity_type", $authority->getMorphClass())
-                )
+                ->join($permissions, function (JoinClause $join) use ($table, $authority, $permissions) {
+                    return $join->on("{$table}.{$authority->getKeyName()}", '=', $permissions.'.entity_id')
+                        ->where("{$permissions}.entity_type", $authority->getMorphClass());
+                })
                 ->where("{$permissions}.forbidden", ! $allowed)
                 ->where("{$table}.{$authority->getKeyName()}", '=', $authority->getKey());
 
